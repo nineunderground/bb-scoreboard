@@ -9,6 +9,13 @@ from ssd1306 import SSD1306_I2C
 # module Y   -> GPIO5
 # module G   -> GPIO4
 #
+# Button module:
+# module GND -> board GND
+# module K1  -> GPIO7   (increase turn)
+# module K2  -> GPIO15  (increase HOME score)
+# module K3  -> GPIO16  (increase AWAY score)
+# module K4  -> GPIO17  (reset scores and turn)
+#
 # JMDO 96C-1 OLED module (I2C):
 # module VCC -> board 3V3
 # module GND -> board GND
@@ -18,18 +25,19 @@ from ssd1306 import SSD1306_I2C
 RED_PIN = 6
 YELLOW_PIN = 5
 GREEN_PIN = 4
+K1_PIN = 7
+K2_PIN = 15
+K3_PIN = 16
+K4_PIN = 17
 OLED_SCL_PIN = 8
 OLED_SDA_PIN = 9
 OLED_WIDTH = 128
 OLED_HEIGHT = 64
 OLED_I2C_ADDR = 0x3C
-REFRESH_DELAY_SECONDS = 1
+POLL_DELAY_SECONDS = 0.05
 
-HOME_SCORE = 2
-AWAY_SCORE = 7
-CURRENT_TURN = 1
-ACTIVE_TEAM = "HOME"
-
+TURN_MIN = 1
+TURN_MAX = 8
 DIGIT_WIDTH = 24
 DIGIT_HEIGHT = 30
 DIGIT_THICKNESS = 4
@@ -57,8 +65,22 @@ SEGMENTS = {
 red = Pin(RED_PIN, Pin.OUT, value=0)
 yellow = Pin(YELLOW_PIN, Pin.OUT, value=0)
 green = Pin(GREEN_PIN, Pin.OUT, value=0)
+k1 = Pin(K1_PIN, Pin.IN, Pin.PULL_UP)
+k2 = Pin(K2_PIN, Pin.IN, Pin.PULL_UP)
+k3 = Pin(K3_PIN, Pin.IN, Pin.PULL_UP)
+k4 = Pin(K4_PIN, Pin.IN, Pin.PULL_UP)
 i2c = I2C(0, scl=Pin(OLED_SCL_PIN), sda=Pin(OLED_SDA_PIN), freq=400000)
 oled = SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c, addr=OLED_I2C_ADDR)
+
+home_score = 0
+away_score = 0
+current_turn = 1
+active_team = "HOME"
+
+last_k1 = 1
+last_k2 = 1
+last_k3 = 1
+last_k4 = 1
 
 
 def set_leds(red_on, yellow_on, green_on):
@@ -67,6 +89,7 @@ def set_leds(red_on, yellow_on, green_on):
     green.value(1 if green_on else 0)
 
 
+# HOME uses red, AWAY uses green, any unexpected state falls back to yellow.
 def update_active_team_led(team):
     if team == "HOME":
         set_leds(True, False, False)
@@ -113,42 +136,108 @@ def draw_team_header(label, x, active):
     oled.text(label, x, 2)
 
 
-def draw_headers(active_team):
-    draw_team_header("HOME", 8, active_team == "HOME")
-    draw_team_header("AWAY", 88, active_team == "AWAY")
+def draw_headers(team):
+    draw_team_header("HOME", 8, team == "HOME")
+    draw_team_header("AWAY", 88, team == "AWAY")
     oled.hline(0, 12, OLED_WIDTH, 1)
     oled.vline(DIVIDER_X, 14, 36, 1)
 
 
-def draw_turn_track(current_turn):
+def draw_turn_track(turn):
     oled.hline(0, 50, OLED_WIDTH, 1)
-    for turn in range(1, 9):
-        x = TURN_START_X + (turn - 1) * TURN_SPACING
-        if turn == current_turn:
+    for value in range(TURN_MIN, TURN_MAX + 1):
+        x = TURN_START_X + (value - 1) * TURN_SPACING
+        if value == turn:
             oled.fill_rect(x - 2, TURN_TRACK_TOP - 1, 10, 10, 1)
-            oled.text(str(turn), x, TURN_TRACK_TOP, 0)
+            oled.text(str(value), x, TURN_TRACK_TOP, 0)
         else:
-            oled.text(str(turn), x, TURN_TRACK_TOP, 1)
+            oled.text(str(value), x, TURN_TRACK_TOP, 1)
 
 
-def draw_scoreboard(home_score, away_score, current_turn, active_team):
+def draw_scoreboard():
     oled.fill(0)
     draw_headers(active_team)
-    draw_digit(HOME_DIGIT_LEFT, DIGIT_TOP, home_score)
-    draw_digit(AWAY_DIGIT_LEFT, DIGIT_TOP, away_score)
+    draw_digit(HOME_DIGIT_LEFT, DIGIT_TOP, home_score % 10)
+    draw_digit(AWAY_DIGIT_LEFT, DIGIT_TOP, away_score % 10)
     draw_turn_track(current_turn)
     oled.show()
 
 
-print("bb-scoreboard OLED scoreboard test")
-print(
-    "showing HOME={} AWAY={} TURN={} ACTIVE={}".format(
-        HOME_SCORE, AWAY_SCORE, CURRENT_TURN, ACTIVE_TEAM
+def refresh_outputs():
+    update_active_team_led(active_team)
+    draw_scoreboard()
+    print(
+        "HOME={} AWAY={} TURN={} ACTIVE={}".format(
+            home_score, away_score, current_turn, active_team
+        )
     )
-)
 
-update_active_team_led(ACTIVE_TEAM)
-draw_scoreboard(HOME_SCORE, AWAY_SCORE, CURRENT_TURN, ACTIVE_TEAM)
+
+def toggle_active_team():
+    global active_team
+    if active_team == "HOME":
+        active_team = "AWAY"
+    else:
+        active_team = "HOME"
+
+
+def handle_turn_button():
+    global current_turn
+    current_turn += 1
+    if current_turn > TURN_MAX:
+        current_turn = TURN_MIN
+    toggle_active_team()
+
+
+def handle_home_button():
+    global home_score
+    home_score = (home_score + 1) % 10
+
+
+def handle_away_button():
+    global away_score
+    away_score = (away_score + 1) % 10
+
+
+def handle_reset_button():
+    global home_score, away_score, current_turn, active_team
+    home_score = 0
+    away_score = 0
+    current_turn = 1
+    active_team = "HOME"
+
+
+print("bb-scoreboard interactive scoreboard test")
+print("K1=turn K2=HOME+1 K3=AWAY+1 K4=reset")
+
+refresh_outputs()
 
 while True:
-    sleep(REFRESH_DELAY_SECONDS)
+    current_k1 = k1.value()
+    current_k2 = k2.value()
+    current_k3 = k3.value()
+    current_k4 = k4.value()
+    changed = False
+
+    if last_k1 == 1 and current_k1 == 0:
+        handle_turn_button()
+        changed = True
+    if last_k2 == 1 and current_k2 == 0:
+        handle_home_button()
+        changed = True
+    if last_k3 == 1 and current_k3 == 0:
+        handle_away_button()
+        changed = True
+    if last_k4 == 1 and current_k4 == 0:
+        handle_reset_button()
+        changed = True
+
+    last_k1 = current_k1
+    last_k2 = current_k2
+    last_k3 = current_k3
+    last_k4 = current_k4
+
+    if changed:
+        refresh_outputs()
+
+    sleep(POLL_DELAY_SECONDS)
