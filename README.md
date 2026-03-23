@@ -156,10 +156,6 @@ From the project directory on the Windows host, use a short delay after connecti
 
     mpremote connect COM6 sleep 1 fs cp .\main.py :main.py
 
-If that still fails, try a slightly longer delay:
-
-    mpremote connect COM6 sleep 2 fs cp .\main.py :main.py
-
 ### 5. Reset the board and open the serial console
 
     mpremote connect COM6 reset
