@@ -43,21 +43,6 @@ License note:
 
 ## Full Pin Diagram
 
-Use the official MicroPython SSD1306 driver from the public upstream source:
-
-    https://raw.githubusercontent.com/stlehmann/micropython-ssd1306/master/ssd1306.py
-
-Download it into the project directory with:
-
-    wget https://raw.githubusercontent.com/stlehmann/micropython-ssd1306/master/ssd1306.py -O ssd1306.py
-
-License note:
-
-- The upstream MicroPython project is MIT-licensed.
-- Keep the copyright and license notice that comes with the downloaded ssd1306.py file.
-
-## Full Pin Diagram
-
 This full diagram matches the official ESP32-S3-DevKitC-1 v1.1 J1 and J3 header layout from Espressif. If your board silkscreen differs, follow the board silkscreen over this README.
 
 Top view, USB connectors at the top:
@@ -102,8 +87,16 @@ Button-module pins used by this project:
     Module K3  -> J1 GPIO16
     Module K4  -> J1 GPIO17
 
+OLED-module pins used by this project:
+
+    Module VCC -> J1 3V3
+    Module GND -> J3 GND
+    Module SCL -> J1 GPIO8
+    Module SDA -> J1 GPIO9
+
 Notes:
 
+- Many 0.96 inch 4-pin OLED modules label the clock pin as `SCL`, but some silkscreens are blurry and can look like `SDL` or `SDI`. For this setup, that pin is the I2C clock line and goes to GPIO8.
 - GPIO38 is the on-board RGB LED on ESP32-S3-DevKitC-1 v1.1 according to Espressif.
 - On boards using ESP32-S3-WROOM-2, GPIO35, GPIO36, and GPIO37 may be reserved for internal flash/PSRAM use and not available externally.
 - The button inputs are configured with internal pull-ups, so each button line is normally high and goes low when pressed.
@@ -128,6 +121,10 @@ The current `main.py` expects this wiring:
 - button module K2 -> ESP32-S3 GPIO15
 - button module K3 -> ESP32-S3 GPIO16
 - button module K4 -> ESP32-S3 GPIO17
+- OLED module VCC -> ESP32-S3 3V3
+- OLED module GND -> ESP32-S3 GND
+- OLED module SCL -> ESP32-S3 GPIO8
+- OLED module SDA -> ESP32-S3 GPIO9
 
 Behavior:
 
@@ -136,6 +133,7 @@ Behavior:
 - K2 pressed -> yellow LED on
 - K3 pressed -> green LED on
 - K4 pressed -> all LEDs on
+- the OLED shows `NONE`, `RED`, `YELLOW`, `GREEN`, or `ALL` to match the current LED state
 
 If more than one button is pressed at the same time, the code gives priority in this order: `K4`, `K1`, `K2`, `K3`.
 
@@ -156,6 +154,13 @@ ASCII wiring diagram:
     [ K3  ] ---------------------------> [ GPIO16 ]
     [ K4  ] ---------------------------> [ GPIO17 ]
 
+    OLED module                          ESP32-S3 DevKit
+    -----------                          ----------------
+    [ VCC ] ---------------------------> [ 3V3 ]
+    [ GND ] ---------------------------> [ GND ]
+    [ SCL ] ---------------------------> [ GPIO8 ]
+    [ SDA ] ---------------------------> [ GPIO9 ]
+
 Pin summary:
 
     Module pin   ESP32-S3 pin   Purpose
@@ -169,12 +174,17 @@ Pin summary:
     K2           GPIO15          Yellow button input
     K3           GPIO16          Green button input
     K4           GPIO17          All-on button input
+    OLED VCC     3V3             OLED power
+    OLED GND     GND             OLED ground
+    OLED SCL     GPIO8           I2C clock
+    OLED SDA     GPIO9           I2C data
 
 Notes:
 
 - This assumes the button module is a simple shared-ground key module where each K pin is shorted to GND when pressed.
 - If the LEDs behave inverted, the LED module may be active-low and the logic in `main.py` should be inverted.
 - If the button module outputs high when pressed instead of low when pressed, the input logic in `main.py` should also be inverted.
+- If the OLED stays blank, common fixes are checking the `SCL` and `SDA` wiring, verifying `3V3` power, and trying I2C address `0x3D` instead of `0x3C` in `main.py`.
 - If the traffic-light module is just bare LEDs and resistors are not onboard, add a 220-330 ohm resistor in series with each color line.
 
 ## Flash and run from Windows
