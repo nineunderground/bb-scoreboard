@@ -1,20 +1,22 @@
 from machine import Pin
 from time import sleep
 
-try:
-    led = Pin("LED", Pin.OUT)
-except Exception:
-    # Common built-in LED pin on many ESP32-S3 dev boards.
-    led = Pin(48, Pin.OUT)
+# Suggested wiring for a 4-pin traffic light LED module on ESP32-S3:
+# module GND -> board GND
+# module R   -> GPIO6
+# module Y   -> GPIO5
+# module G   -> GPIO4
 
-print("bb-scoreboard hello world")
-print("MicroPython firmware booted successfully")
+RED_PIN = 6
+YELLOW_PIN = 5
+GREEN_PIN = 4
 
-counter = 0
+red = Pin(RED_PIN, Pin.OUT, value=0)
+yellow = Pin(YELLOW_PIN, Pin.OUT, value=0)
+green = Pin(GREEN_PIN, Pin.OUT, value=1)
+
+print("bb-scoreboard traffic light test")
+print("red=OFF yellow=OFF green=ON")
+
 while True:
-    led.on()
-    print("hello from ESP32-S3, tick=%d" % counter)
-    sleep(0.5)
-    led.off()
-    sleep(0.5)
-    counter += 1
+    sleep(1)
