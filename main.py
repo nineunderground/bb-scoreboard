@@ -210,39 +210,67 @@ def handle_reset_button():
     active_team = "HOME"
 
 
-def draw_player_sprite(frame):
-    body_x = 44
-    body_y = 8
-    if frame == 1:
-        left_arm_y = 20
-        right_arm_y = 18
-        left_leg_dx = -10
-        right_leg_dx = 9
-    else:
-        left_arm_y = 18
-        right_arm_y = 20
-        left_leg_dx = -8
-        right_leg_dx = 11
+def draw_logo_spikes(cx, cy, frame):
+    offset = frame % 2
+    oled.line(cx - 18, cy - 20, cx - 14, cy - 30 + offset, 1)
+    oled.line(cx + 18, cy - 20, cx + 14, cy - 30 + offset, 1)
+    oled.line(cx - 24, cy - 8, cx - 34 + offset, cy - 10, 1)
+    oled.line(cx + 24, cy - 8, cx + 34 - offset, cy - 10, 1)
+    oled.line(cx - 24, cy + 8, cx - 34 + offset, cy + 10, 1)
+    oled.line(cx + 24, cy + 8, cx + 34 - offset, cy + 10, 1)
+    oled.line(cx - 18, cy + 20, cx - 14, cy + 30 - offset, 1)
+    oled.line(cx + 18, cy + 20, cx + 14, cy + 30 - offset, 1)
 
-    oled.fill_rect(body_x + 8, body_y + 8, 12, 18, 1)
-    oled.fill_rect(body_x + 9, body_y + 9, 10, 4, 0)
-    oled.fill_rect(body_x + 6, body_y + 4, 16, 8, 1)
-    oled.fill_rect(body_x + 10, body_y + 0, 8, 5, 1)
-    oled.line(body_x + 8, body_y + 15, body_x - 4, left_arm_y, 1)
-    oled.line(body_x + 20, body_y + 15, body_x + 32, right_arm_y, 1)
-    oled.line(body_x + 12, body_y + 26, body_x + left_leg_dx, body_y + 40, 1)
-    oled.line(body_x + 18, body_y + 26, body_x + right_leg_dx, body_y + 40, 1)
-    oled.fill_rect(body_x + 24, body_y + 10, 6, 4, 1)
+
+def draw_logo_ring(cx, cy):
+    oled.rect(cx - 20, cy - 18, 40, 36, 1)
+    oled.rect(cx - 18, cy - 16, 36, 32, 1)
+    oled.fill_rect(cx - 16, cy - 14, 32, 28, 0)
+
+
+def draw_logo_cross(cx, cy, frame):
+    inset = frame % 2
+    oled.line(cx - 12, cy - 12 + inset, cx + 12, cy + 12 - inset, 1)
+    oled.line(cx - 12, cy + 12 - inset, cx + 12, cy - 12 + inset, 1)
+    oled.line(cx - 10, cy - 12 + inset, cx + 14, cy + 12 - inset, 1)
+    oled.line(cx - 10, cy + 12 - inset, cx + 14, cy - 12 + inset, 1)
+
+
+def draw_logo_bb(cx, cy):
+    oled.text("B", cx - 15, cy - 7)
+    oled.text("B", cx + 5, cy - 1)
+
+
+def draw_cropped_logo(frame):
+    cx = 64
+    cy = 24
+    draw_logo_spikes(cx, cy, frame)
+    draw_logo_ring(cx, cy)
+    draw_logo_cross(cx, cy, frame)
+    draw_logo_bb(cx, cy)
 
 
 def show_startup_animation():
-    frames = (0, 1, 0)
-    for frame in frames:
+    for frame in range(3):
         oled.fill(0)
-        draw_player_sprite(frame)
+        reveal_w = 18 + frame * 18
+        reveal_h = 18 + frame * 12
+        left = 64 - (reveal_w // 2)
+        top = 24 - (reveal_h // 2)
+        draw_cropped_logo(frame)
+        oled.fill_rect(0, 0, left, 48, 0)
+        oled.fill_rect(left + reveal_w, 0, OLED_WIDTH - (left + reveal_w), 48, 0)
+        oled.fill_rect(left, 0, reveal_w, top, 0)
+        oled.fill_rect(left, top + reveal_h, reveal_w, 48 - (top + reveal_h), 0)
         oled.text("BLOOD BOWL", 30, 52)
         oled.show()
-        sleep(1)
+        sleep(0.6)
+
+    oled.fill(0)
+    draw_cropped_logo(1)
+    oled.text("BLOOD BOWL", 30, 52)
+    oled.show()
+    sleep(1.2)
 
 
 print("bb-scoreboard interactive scoreboard test")
