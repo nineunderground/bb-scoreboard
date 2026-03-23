@@ -210,9 +210,45 @@ def handle_reset_button():
     active_team = "HOME"
 
 
+def draw_player_sprite(frame):
+    body_x = 44
+    body_y = 8
+    if frame == 1:
+        left_arm_y = 20
+        right_arm_y = 18
+        left_leg_dx = -10
+        right_leg_dx = 9
+    else:
+        left_arm_y = 18
+        right_arm_y = 20
+        left_leg_dx = -8
+        right_leg_dx = 11
+
+    oled.fill_rect(body_x + 8, body_y + 8, 12, 18, 1)
+    oled.fill_rect(body_x + 9, body_y + 9, 10, 4, 0)
+    oled.fill_rect(body_x + 6, body_y + 4, 16, 8, 1)
+    oled.fill_rect(body_x + 10, body_y + 0, 8, 5, 1)
+    oled.line(body_x + 8, body_y + 15, body_x - 4, left_arm_y, 1)
+    oled.line(body_x + 20, body_y + 15, body_x + 32, right_arm_y, 1)
+    oled.line(body_x + 12, body_y + 26, body_x + left_leg_dx, body_y + 40, 1)
+    oled.line(body_x + 18, body_y + 26, body_x + right_leg_dx, body_y + 40, 1)
+    oled.fill_rect(body_x + 24, body_y + 10, 6, 4, 1)
+
+
+def show_startup_animation():
+    frames = (0, 1, 0)
+    for frame in frames:
+        oled.fill(0)
+        draw_player_sprite(frame)
+        oled.text("BLOOD BOWL", 30, 52)
+        oled.show()
+        sleep(1)
+
+
 print("bb-scoreboard interactive scoreboard test")
 print("K1=turn K2=HOME+1 K3=AWAY+1 K4=reset")
 
+show_startup_animation()
 refresh_outputs()
 
 while True:
