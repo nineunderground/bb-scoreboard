@@ -26,6 +26,36 @@ This project targets an ESP32-S3 DevKit style board.
 
 Use the UART / COM USB port for flashing. On your Windows host that is currently COM6.
 
+## OLED Driver Source
+
+The earlier `micropython/micropython` raw URL returned `404 Not Found`. Use this working public source instead:
+
+    https://raw.githubusercontent.com/stlehmann/micropython-ssd1306/master/ssd1306.py
+
+Download it into the project directory with:
+
+    wget https://raw.githubusercontent.com/stlehmann/micropython-ssd1306/master/ssd1306.py -O ssd1306.py
+
+License note:
+
+- This MicroPython SSD1306 driver is MIT-licensed.
+- Keep the copyright and license notice that comes with the downloaded `ssd1306.py` file.
+
+## Full Pin Diagram
+
+Use the official MicroPython SSD1306 driver from the public upstream source:
+
+    https://raw.githubusercontent.com/stlehmann/micropython-ssd1306/master/ssd1306.py
+
+Download it into the project directory with:
+
+    wget https://raw.githubusercontent.com/stlehmann/micropython-ssd1306/master/ssd1306.py -O ssd1306.py
+
+License note:
+
+- The upstream MicroPython project is MIT-licensed.
+- Keep the copyright and license notice that comes with the downloaded ssd1306.py file.
+
 ## Full Pin Diagram
 
 This full diagram matches the official ESP32-S3-DevKitC-1 v1.1 J1 and J3 header layout from Espressif. If your board silkscreen differs, follow the board silkscreen over this README.
