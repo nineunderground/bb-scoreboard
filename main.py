@@ -182,11 +182,14 @@ def toggle_active_team():
 
 
 def handle_turn_button():
-    global current_turn
-    current_turn += 1
-    if current_turn > TURN_MAX:
-        current_turn = TURN_MIN
-    toggle_active_team()
+    global current_turn, active_team
+    if active_team == "HOME":
+        active_team = "AWAY"
+    else:
+        active_team = "HOME"
+        current_turn += 1
+        if current_turn > TURN_MAX:
+            current_turn = TURN_MIN
 
 
 def handle_home_button():
