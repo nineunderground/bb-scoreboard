@@ -3,12 +3,21 @@ from time import sleep
 
 from ssd1306 import SSD1306_I2C
 
+# Traffic light LED module:
+# module GND -> board GND
+# module R   -> GPIO6
+# module Y   -> GPIO5
+# module G   -> GPIO4
+#
 # JMDO 96C-1 OLED module (I2C):
 # module VCC -> board 3V3
 # module GND -> board GND
 # module SCL -> GPIO8
 # module SDA -> GPIO9
 
+RED_PIN = 6
+YELLOW_PIN = 5
+GREEN_PIN = 4
 OLED_SCL_PIN = 8
 OLED_SDA_PIN = 9
 OLED_WIDTH = 128
@@ -45,8 +54,26 @@ SEGMENTS = {
     "9": (1, 1, 1, 1, 0, 1, 1),
 }
 
+red = Pin(RED_PIN, Pin.OUT, value=0)
+yellow = Pin(YELLOW_PIN, Pin.OUT, value=0)
+green = Pin(GREEN_PIN, Pin.OUT, value=0)
 i2c = I2C(0, scl=Pin(OLED_SCL_PIN), sda=Pin(OLED_SDA_PIN), freq=400000)
 oled = SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c, addr=OLED_I2C_ADDR)
+
+
+def set_leds(red_on, yellow_on, green_on):
+    red.value(1 if red_on else 0)
+    yellow.value(1 if yellow_on else 0)
+    green.value(1 if green_on else 0)
+
+
+def update_active_team_led(team):
+    if team == "HOME":
+        set_leds(True, False, False)
+    elif team == "AWAY":
+        set_leds(False, False, True)
+    else:
+        set_leds(False, True, False)
 
 
 def draw_horizontal_segment(x, y):
@@ -86,9 +113,9 @@ def draw_team_header(label, x, active):
     oled.text(label, x, 2)
 
 
-def draw_headers():
-    draw_team_header("HOME", 8, ACTIVE_TEAM == "HOME")
-    draw_team_header("AWAY", 88, ACTIVE_TEAM == "AWAY")
+def draw_headers(active_team):
+    draw_team_header("HOME", 8, active_team == "HOME")
+    draw_team_header("AWAY", 88, active_team == "AWAY")
     oled.hline(0, 12, OLED_WIDTH, 1)
     oled.vline(DIVIDER_X, 14, 36, 1)
 
@@ -104,9 +131,9 @@ def draw_turn_track(current_turn):
             oled.text(str(turn), x, TURN_TRACK_TOP, 1)
 
 
-def draw_scoreboard(home_score, away_score, current_turn):
+def draw_scoreboard(home_score, away_score, current_turn, active_team):
     oled.fill(0)
-    draw_headers()
+    draw_headers(active_team)
     draw_digit(HOME_DIGIT_LEFT, DIGIT_TOP, home_score)
     draw_digit(AWAY_DIGIT_LEFT, DIGIT_TOP, away_score)
     draw_turn_track(current_turn)
@@ -114,9 +141,14 @@ def draw_scoreboard(home_score, away_score, current_turn):
 
 
 print("bb-scoreboard OLED scoreboard test")
-print("showing HOME={} AWAY={} TURN={}".format(HOME_SCORE, AWAY_SCORE, CURRENT_TURN))
+print(
+    "showing HOME={} AWAY={} TURN={} ACTIVE={}".format(
+        HOME_SCORE, AWAY_SCORE, CURRENT_TURN, ACTIVE_TEAM
+    )
+)
 
-draw_scoreboard(HOME_SCORE, AWAY_SCORE, CURRENT_TURN)
+update_active_team_led(ACTIVE_TEAM)
+draw_scoreboard(HOME_SCORE, AWAY_SCORE, CURRENT_TURN, ACTIVE_TEAM)
 
 while True:
     sleep(REFRESH_DELAY_SECONDS)
