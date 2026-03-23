@@ -10,7 +10,7 @@ This project uses Python for both:
 The example does two things:
 
 - prints a hello-world message to the serial console at 115200 baud
-- drives a 4-pin traffic-light LED module with green always on
+- drives a 4-pin traffic-light LED module from a 4-button input module
 
 ## Project layout
 
@@ -64,11 +64,19 @@ Traffic-light pins used by this project:
     Module Y   -> J1 GPIO5
     Module G   -> J1 GPIO4
 
+Button-module pins used by this project:
+
+    Module GND -> J3 GND
+    Module K1  -> J1 GPIO7
+    Module K2  -> J1 GPIO15
+    Module K3  -> J1 GPIO16
+    Module K4  -> J1 GPIO17
+
 Notes:
 
 - GPIO38 is the on-board RGB LED on ESP32-S3-DevKitC-1 v1.1 according to Espressif.
 - On boards using ESP32-S3-WROOM-2, GPIO35, GPIO36, and GPIO37 may be reserved for internal flash/PSRAM use and not available externally.
-- Power the traffic-light module from signal pins only if the module is designed for that; otherwise use the module GND plus the three signal pins only.
+- The button inputs are configured with internal pull-ups, so each button line is normally high and goes low when pressed.
 
 If flashing fails, force bootloader mode:
 
@@ -77,14 +85,29 @@ If flashing fails, force bootloader mode:
 3. Release BOOT
 4. Retry the command
 
-## Traffic Light Wiring
+## Wiring
 
-The current main.py expects this wiring:
+The current `main.py` expects this wiring:
 
-- module GND -> ESP32-S3 GND
-- module R -> ESP32-S3 GPIO6
-- module Y -> ESP32-S3 GPIO5
-- module G -> ESP32-S3 GPIO4
+- traffic-light module GND -> ESP32-S3 GND
+- traffic-light module R -> ESP32-S3 GPIO6
+- traffic-light module Y -> ESP32-S3 GPIO5
+- traffic-light module G -> ESP32-S3 GPIO4
+- button module GND -> ESP32-S3 GND
+- button module K1 -> ESP32-S3 GPIO7
+- button module K2 -> ESP32-S3 GPIO15
+- button module K3 -> ESP32-S3 GPIO16
+- button module K4 -> ESP32-S3 GPIO17
+
+Behavior:
+
+- no button pressed -> all LEDs off
+- K1 pressed -> red LED on
+- K2 pressed -> yellow LED on
+- K3 pressed -> green LED on
+- K4 pressed -> all LEDs on
+
+If more than one button is pressed at the same time, the code gives priority in this order: `K4`, `K1`, `K2`, `K3`.
 
 ASCII wiring diagram:
 
@@ -95,20 +118,34 @@ ASCII wiring diagram:
     [ Y   ] ---------------------------> [ GPIO5 ]
     [ G   ] ---------------------------> [ GPIO4 ]
 
+    Button module                        ESP32-S3 DevKit
+    -------------                        ----------------
+    [ GND ] ---------------------------> [ GND ]
+    [ K1  ] ---------------------------> [ GPIO7 ]
+    [ K2  ] ---------------------------> [ GPIO15 ]
+    [ K3  ] ---------------------------> [ GPIO16 ]
+    [ K4  ] ---------------------------> [ GPIO17 ]
+
 Pin summary:
 
     Module pin   ESP32-S3 pin   Purpose
     ----------   -------------   -------
-    GND          GND             Ground
+    LED GND      GND             Ground
     R            GPIO6           Red LED control
     Y            GPIO5           Yellow LED control
     G            GPIO4           Green LED control
+    BTN GND      GND             Button module ground
+    K1           GPIO7           Red button input
+    K2           GPIO15          Yellow button input
+    K3           GPIO16          Green button input
+    K4           GPIO17          All-on button input
 
 Notes:
 
-- This assumes a typical GND plus three signal pins traffic-light module.
-- If the module is just bare LEDs and resistors are not onboard, add a 220-330 ohm resistor in series with each color line.
-- If the LEDs behave inverted, the module may be active-low and the logic in main.py should be inverted.
+- This assumes the button module is a simple shared-ground key module where each K pin is shorted to GND when pressed.
+- If the LEDs behave inverted, the LED module may be active-low and the logic in `main.py` should be inverted.
+- If the button module outputs high when pressed instead of low when pressed, the input logic in `main.py` should also be inverted.
+- If the traffic-light module is just bare LEDs and resistors are not onboard, add a 220-330 ohm resistor in series with each color line.
 
 ## Flash and run from Windows
 
@@ -163,8 +200,8 @@ From the project directory on the Windows host, use a short delay after connecti
 
 You should see lines like:
 
-    bb-scoreboard traffic light test
-    red=OFF yellow=OFF green=ON
+    bb-scoreboard traffic light button test
+    K1=red K2=yellow K3=green K4=all
 
 Exit the REPL with Ctrl+].
 
