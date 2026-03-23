@@ -231,7 +231,8 @@ Save the downloaded file somewhere accessible on your Windows host, for example:
 
 From the project directory on the Windows host, use a short delay after connecting before the filesystem copy:
 
-    mpremote connect COM6 sleep 1 fs cp .\main.py :main.py .\ssd1306.py :ssd1306.py
+    mpremote connect COM6 sleep 1 fs cp .\main.py :main.py
+    mpremote connect COM6 sleep 1 fs cp .\ssd1306.py :ssd1306.py
 
 ### 5. Reset the board and open the serial console
 
@@ -254,7 +255,8 @@ Open PowerShell in the project and reactivate the environment:
 
 Then upload the updated script again:
 
-    mpremote connect COM6 sleep 1 fs cp .\main.py :main.py .\ssd1306.py :ssd1306.py
+    mpremote connect COM6 sleep 1 fs cp .\main.py :main.py
+    mpremote connect COM6 sleep 1 fs cp .\ssd1306.py :ssd1306.py
     mpremote connect COM6 reset
 
 ## Files

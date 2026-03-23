@@ -3,112 +3,96 @@ from time import sleep
 
 from ssd1306 import SSD1306_I2C
 
-# Traffic light LED module:
-# module GND -> board GND
-# module R   -> GPIO6
-# module Y   -> GPIO5
-# module G   -> GPIO4
-#
-# Button module:
-# module GND -> board GND
-# module K1  -> GPIO7
-# module K2  -> GPIO15
-# module K3  -> GPIO16
-# module K4  -> GPIO17
-#
 # JMDO 96C-1 OLED module (I2C):
 # module VCC -> board 3V3
 # module GND -> board GND
 # module SCL -> GPIO8
 # module SDA -> GPIO9
-#
-# The button inputs use internal pull-ups, so each input reads:
-# 1 when not pressed
-# 0 when pressed
 
-RED_PIN = 6
-YELLOW_PIN = 5
-GREEN_PIN = 4
-K1_PIN = 7
-K2_PIN = 15
-K3_PIN = 16
-K4_PIN = 17
 OLED_SCL_PIN = 8
 OLED_SDA_PIN = 9
 OLED_WIDTH = 128
 OLED_HEIGHT = 64
 OLED_I2C_ADDR = 0x3C
-POLL_DELAY_SECONDS = 0.05
+REFRESH_DELAY_SECONDS = 1
 
-STATE_NONE = "NONE"
-STATE_RED = "RED"
-STATE_YELLOW = "YELLOW"
-STATE_GREEN = "GREEN"
-STATE_ALL = "ALL"
+HOME_SCORE = 2
+AWAY_SCORE = 7
 
-red = Pin(RED_PIN, Pin.OUT, value=0)
-yellow = Pin(YELLOW_PIN, Pin.OUT, value=0)
-green = Pin(GREEN_PIN, Pin.OUT, value=0)
-k1 = Pin(K1_PIN, Pin.IN, Pin.PULL_UP)
-k2 = Pin(K2_PIN, Pin.IN, Pin.PULL_UP)
-k3 = Pin(K3_PIN, Pin.IN, Pin.PULL_UP)
-k4 = Pin(K4_PIN, Pin.IN, Pin.PULL_UP)
+DIGIT_WIDTH = 24
+DIGIT_HEIGHT = 38
+DIGIT_THICKNESS = 4
+DIGIT_TOP = 20
+HOME_DIGIT_LEFT = 18
+AWAY_DIGIT_LEFT = 86
+DIVIDER_X = 63
+
+SEGMENTS = {
+    "0": (1, 1, 1, 1, 1, 1, 0),
+    "1": (0, 1, 1, 0, 0, 0, 0),
+    "2": (1, 1, 0, 1, 1, 0, 1),
+    "3": (1, 1, 1, 1, 0, 0, 1),
+    "4": (0, 1, 1, 0, 0, 1, 1),
+    "5": (1, 0, 1, 1, 0, 1, 1),
+    "6": (1, 0, 1, 1, 1, 1, 1),
+    "7": (1, 1, 1, 0, 0, 0, 0),
+    "8": (1, 1, 1, 1, 1, 1, 1),
+    "9": (1, 1, 1, 1, 0, 1, 1),
+}
 
 i2c = I2C(0, scl=Pin(OLED_SCL_PIN), sda=Pin(OLED_SDA_PIN), freq=400000)
 oled = SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c, addr=OLED_I2C_ADDR)
 
 
-def set_leds(red_on, yellow_on, green_on):
-    red.value(1 if red_on else 0)
-    yellow.value(1 if yellow_on else 0)
-    green.value(1 if green_on else 0)
+def draw_horizontal_segment(x, y):
+    oled.fill_rect(x, y, DIGIT_WIDTH, DIGIT_THICKNESS, 1)
 
 
-def show_status(state):
+def draw_vertical_segment(x, y):
+    oled.fill_rect(x, y, DIGIT_THICKNESS, DIGIT_HEIGHT // 2, 1)
+
+
+def draw_digit(x, y, value):
+    a, b, c, d, e, f, g = SEGMENTS[str(value)]
+    middle_y = y + (DIGIT_HEIGHT // 2) - (DIGIT_THICKNESS // 2)
+    bottom_y = y + DIGIT_HEIGHT - DIGIT_THICKNESS
+    right_x = x + DIGIT_WIDTH - DIGIT_THICKNESS
+
+    if a:
+        draw_horizontal_segment(x, y)
+    if b:
+        draw_vertical_segment(right_x, y)
+    if c:
+        draw_vertical_segment(right_x, middle_y)
+    if d:
+        draw_horizontal_segment(x, bottom_y)
+    if e:
+        draw_vertical_segment(x, middle_y)
+    if f:
+        draw_vertical_segment(x, y)
+    if g:
+        draw_horizontal_segment(x, middle_y)
+
+
+def draw_headers():
+    oled.text("HOME", 8, 2)
+    oled.text("AWAY", 88, 2)
+    oled.hline(0, 12, OLED_WIDTH, 1)
+    oled.vline(DIVIDER_X, 14, OLED_HEIGHT - 14, 1)
+
+
+def draw_scoreboard(home_score, away_score):
     oled.fill(0)
-    oled.text("BB SCOREBOARD", 0, 0)
-    oled.text("LED STATUS:", 0, 16)
-    oled.text(state, 0, 32)
+    draw_headers()
+    draw_digit(HOME_DIGIT_LEFT, DIGIT_TOP, home_score)
+    draw_digit(AWAY_DIGIT_LEFT, DIGIT_TOP, away_score)
     oled.show()
 
 
-def read_state():
-    if k4.value() == 0:
-        return STATE_ALL
-    if k1.value() == 0:
-        return STATE_RED
-    if k2.value() == 0:
-        return STATE_YELLOW
-    if k3.value() == 0:
-        return STATE_GREEN
-    return STATE_NONE
+print("bb-scoreboard OLED scoreboard test")
+print("showing HOME={} AWAY={}".format(HOME_SCORE, AWAY_SCORE))
 
-
-def apply_state(state):
-    if state == STATE_ALL:
-        set_leds(True, True, True)
-    elif state == STATE_RED:
-        set_leds(True, False, False)
-    elif state == STATE_YELLOW:
-        set_leds(False, True, False)
-    elif state == STATE_GREEN:
-        set_leds(False, False, True)
-    else:
-        set_leds(False, False, False)
-
-
-print("bb-scoreboard traffic light button test")
-print("K1=red K2=yellow K3=green K4=all")
-print("OLED shows NONE/RED/YELLOW/GREEN/ALL")
-
-last_state = None
+draw_scoreboard(HOME_SCORE, AWAY_SCORE)
 
 while True:
-    state = read_state()
-    if state != last_state:
-        apply_state(state)
-        show_status(state)
-        print("state={}".format(state))
-        last_state = state
-
-    sleep(POLL_DELAY_SECONDS)
+    sleep(REFRESH_DELAY_SECONDS)
