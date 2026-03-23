@@ -227,11 +227,11 @@ Save the downloaded file somewhere accessible on your Windows host, for example:
     python -m esptool --chip esp32s3 --port COM6 erase-flash
     python -m esptool --chip esp32s3 --port COM6 --baud 460800 write-flash -z 0 ESP32_GENERIC_S3-20251209-v1.27.0.bin
 
-### 4. Upload main.py to the board
+### 4. Upload Python files to the board
 
 From the project directory on the Windows host, use a short delay after connecting before the filesystem copy:
 
-    mpremote connect COM6 sleep 1 fs cp .\main.py :main.py
+    mpremote connect COM6 sleep 1 fs cp .\main.py :main.py .\ssd1306.py :ssd1306.py
 
 ### 5. Reset the board and open the serial console
 
@@ -254,7 +254,7 @@ Open PowerShell in the project and reactivate the environment:
 
 Then upload the updated script again:
 
-    mpremote connect COM6 sleep 1 fs cp .\main.py :main.py
+    mpremote connect COM6 sleep 1 fs cp .\main.py :main.py .\ssd1306.py :ssd1306.py
     mpremote connect COM6 reset
 
 ## Files
