@@ -18,14 +18,19 @@ REFRESH_DELAY_SECONDS = 1
 
 HOME_SCORE = 2
 AWAY_SCORE = 7
+CURRENT_TURN = 1
+ACTIVE_TEAM = "HOME"
 
 DIGIT_WIDTH = 24
-DIGIT_HEIGHT = 38
+DIGIT_HEIGHT = 30
 DIGIT_THICKNESS = 4
-DIGIT_TOP = 20
+DIGIT_TOP = 18
 HOME_DIGIT_LEFT = 18
 AWAY_DIGIT_LEFT = 86
 DIVIDER_X = 63
+TURN_TRACK_TOP = 54
+TURN_START_X = 6
+TURN_SPACING = 15
 
 SEGMENTS = {
     "0": (1, 1, 1, 1, 1, 1, 0),
@@ -49,7 +54,8 @@ def draw_horizontal_segment(x, y):
 
 
 def draw_vertical_segment(x, y):
-    oled.fill_rect(x, y, DIGIT_THICKNESS, DIGIT_HEIGHT // 2, 1)
+    segment_height = (DIGIT_HEIGHT // 2) - 1
+    oled.fill_rect(x, y, DIGIT_THICKNESS, segment_height, 1)
 
 
 def draw_digit(x, y, value):
@@ -74,25 +80,43 @@ def draw_digit(x, y, value):
         draw_horizontal_segment(x, middle_y)
 
 
+def draw_team_header(label, x, active):
+    if active:
+        oled.rect(x - 2, 0, 32, 11, 1)
+    oled.text(label, x, 2)
+
+
 def draw_headers():
-    oled.text("HOME", 8, 2)
-    oled.text("AWAY", 88, 2)
+    draw_team_header("HOME", 8, ACTIVE_TEAM == "HOME")
+    draw_team_header("AWAY", 88, ACTIVE_TEAM == "AWAY")
     oled.hline(0, 12, OLED_WIDTH, 1)
-    oled.vline(DIVIDER_X, 14, OLED_HEIGHT - 14, 1)
+    oled.vline(DIVIDER_X, 14, 36, 1)
 
 
-def draw_scoreboard(home_score, away_score):
+def draw_turn_track(current_turn):
+    oled.hline(0, 50, OLED_WIDTH, 1)
+    for turn in range(1, 9):
+        x = TURN_START_X + (turn - 1) * TURN_SPACING
+        if turn == current_turn:
+            oled.fill_rect(x - 2, TURN_TRACK_TOP - 1, 10, 10, 1)
+            oled.text(str(turn), x, TURN_TRACK_TOP, 0)
+        else:
+            oled.text(str(turn), x, TURN_TRACK_TOP, 1)
+
+
+def draw_scoreboard(home_score, away_score, current_turn):
     oled.fill(0)
     draw_headers()
     draw_digit(HOME_DIGIT_LEFT, DIGIT_TOP, home_score)
     draw_digit(AWAY_DIGIT_LEFT, DIGIT_TOP, away_score)
+    draw_turn_track(current_turn)
     oled.show()
 
 
 print("bb-scoreboard OLED scoreboard test")
-print("showing HOME={} AWAY={}".format(HOME_SCORE, AWAY_SCORE))
+print("showing HOME={} AWAY={} TURN={}".format(HOME_SCORE, AWAY_SCORE, CURRENT_TURN))
 
-draw_scoreboard(HOME_SCORE, AWAY_SCORE)
+draw_scoreboard(HOME_SCORE, AWAY_SCORE, CURRENT_TURN)
 
 while True:
     sleep(REFRESH_DELAY_SECONDS)
